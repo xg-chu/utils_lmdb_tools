@@ -13,7 +13,7 @@ setup(
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
         packages=find_packages(),
-        install_requires=[],
+        install_requires=['lmdb>=1.5.1',],
         keywords=['lmdb', 'pytorch', 'numpy'],
         classifiers= [
             "Development Status :: 3 - Alpha",
