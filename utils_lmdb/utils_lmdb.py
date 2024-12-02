@@ -96,15 +96,17 @@ class LMDBEngine:
             print('Key:{} exsists!'.format(key_name))
             return 
         if type == 'numpy':
-            assert isinstance(payload, torch.Tensor) or isinstance(payload, np.ndarray), payload
-            torch_buf = io.BytesIO()
+            assert isinstance(payload, torch.Tensor) or isinstance(payload, np.ndarray) or isinstance(payload, dict), payload
+            numpy_buf = io.BytesIO()
             if isinstance(payload, torch.Tensor):
-                torch.save(payload.detach().float().cpu(), torch_buf)
+                np.save(numpy_buf, payload.detach().cpu().numpy())
+            elif isinstance(payload, np.ndarray):
+                np.save(payload, numpy_buf)
             else:
                 for key in payload.keys():
-                    payload[key] = payload[key].detach().float().cpu()
-                torch.save(payload, torch_buf)
-            payload_encoded = torch_buf.getvalue()
+                    payload[key] = payload[key].detach().cpu().numpy() if isinstance(payload[key], torch.Tensor) else payload[key]
+                np.save(numpy_buf, payload)
+            payload_encoded = numpy_buf.getvalue()
             # torch_data = torch.load(io.BytesIO(payload_encoded), weights_only=True)
             self._lmdb_txn.put(key_name.encode(), payload_encoded)
         elif type == 'image':
