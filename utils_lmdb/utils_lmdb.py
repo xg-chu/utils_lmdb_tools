@@ -63,7 +63,8 @@ class LMDBEngine:
         if payload is None:
             raise KeyError('Key:{} Not Found!'.format(key_name))
         if type == 'numpy':
-            numpy_data = torch.tensor(np.load(io.BytesIO(payload)))
+            numpy_data = np.load(io.BytesIO(payload))
+            numpy_data = data_to_torch(numpy_data)
             return numpy_data
         elif type == 'image':
             image_buf = torch.tensor(np.frombuffer(payload, dtype=np.uint8))
@@ -98,16 +99,9 @@ class LMDBEngine:
         if type == 'numpy':
             assert isinstance(payload, torch.Tensor) or isinstance(payload, np.ndarray) or isinstance(payload, dict), payload
             numpy_buf = io.BytesIO()
-            if isinstance(payload, torch.Tensor):
-                np.save(numpy_buf, payload.detach().cpu().numpy())
-            elif isinstance(payload, np.ndarray):
-                np.save(payload, numpy_buf)
-            else:
-                for key in payload.keys():
-                    payload[key] = payload[key].detach().cpu().numpy() if isinstance(payload[key], torch.Tensor) else payload[key]
-                np.save(numpy_buf, payload)
+            payload = data_to_numpy(payload)
+            np.save(payload, numpy_buf)
             payload_encoded = numpy_buf.getvalue()
-            # torch_data = torch.load(io.BytesIO(payload_encoded), weights_only=True)
             self._lmdb_txn.put(key_name.encode(), payload_encoded)
         elif type == 'image':
             assert payload.dim() == 3 and payload.shape[0] == 3
@@ -182,3 +176,43 @@ class LMDBEngine:
         images = [self.load(key, type='image')/255.0 for key in all_keys]
         images = [torchvision.transforms.functional.resize(i, (256, 256), antialias=True) for i in images]
         torchvision.utils.save_image(images, vis_path, nrow=5)
+
+
+def data_to_numpy(raw_data):
+    if isinstance(raw_data, np.ndarray):
+        return raw_data
+    elif isinstance(raw_data, torch.Tensor):
+        return raw_data.detach().cpu().numpy()
+    elif isinstance(raw_data, dict):
+        convert_data = {}
+        for key in raw_data.keys():
+            if isinstance(raw_data[key], torch.Tensor):
+                convert_data[key] = raw_data[key].detach().cpu().numpy()
+            elif isinstance(raw_data[key], dict):
+                convert_data[key] = dict_to_numpy(raw_data[key])
+            else:
+                convert_data[key] = raw_data[key]
+        return convert_data
+    else:
+        print('Only Support TorchTensor/NumpyArray and Dict Data Type.')
+        raise NotImplementedError
+    
+
+def data_to_torch(raw_data):
+    if isinstance(raw_data, torch.Tensor):
+        return raw_data
+    elif isinstance(raw_data, np.ndarray):
+        return torch.tensor(raw_data)
+    elif isinstance(raw_data, dict):
+        convert_data = {}
+        for key in raw_data.keys():
+            if isinstance(raw_data[key], np.ndarray):
+                convert_data[key] = torch.tensor(raw_data[key])
+            elif isinstance(raw_data[key], dict):
+                convert_data[key] = dict_to_torch(raw_data[key])
+            else:
+                convert_data[key] = raw_data[key]
+        return convert_data
+    else:
+        print('Only Support TorchTensor/NumpyArray and Dict Data Type.')
+        raise NotImplementedError
