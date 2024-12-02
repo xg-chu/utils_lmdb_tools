@@ -100,7 +100,7 @@ class LMDBEngine:
             assert isinstance(payload, torch.Tensor) or isinstance(payload, np.ndarray) or isinstance(payload, dict), payload
             numpy_buf = io.BytesIO()
             payload = data_to_numpy(payload)
-            np.save(payload, numpy_buf)
+            np.save(numpy_buf, payload)
             payload_encoded = numpy_buf.getvalue()
             self._lmdb_txn.put(key_name.encode(), payload_encoded)
         elif type == 'image':
@@ -189,7 +189,7 @@ def data_to_numpy(raw_data):
             if isinstance(raw_data[key], torch.Tensor):
                 convert_data[key] = raw_data[key].detach().cpu().numpy()
             elif isinstance(raw_data[key], dict):
-                convert_data[key] = dict_to_numpy(raw_data[key])
+                convert_data[key] = data_to_numpy(raw_data[key])
             else:
                 convert_data[key] = raw_data[key]
         return convert_data
@@ -209,7 +209,7 @@ def data_to_torch(raw_data):
             if isinstance(raw_data[key], np.ndarray):
                 convert_data[key] = torch.tensor(raw_data[key])
             elif isinstance(raw_data[key], dict):
-                convert_data[key] = dict_to_torch(raw_data[key])
+                convert_data[key] = data_to_torch(raw_data[key])
             else:
                 convert_data[key] = raw_data[key]
         return convert_data
