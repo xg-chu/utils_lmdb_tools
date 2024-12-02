@@ -87,7 +87,7 @@ class LMDBEngine:
             raise NotImplementedError
 
     def dump(self, key_name, payload, type='image', encode_jpeg=True):
-        assert isinstance(payload, torch.Tensor) or isinstance(payload, np.ndarray), payload
+        assert isinstance(payload, torch.Tensor) or isinstance(payload, np.ndarray) or isinstance(payload, dict), payload
         if not self._write:
             raise AssertionError('Engine Not Running in Write Mode.')
         if not hasattr(self, '_dump_counter'):
