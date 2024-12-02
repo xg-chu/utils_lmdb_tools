@@ -46,10 +46,9 @@ class LMDBEngine:
         if payload is None:
             raise KeyError('Key:{} Not Found!'.format(key_name))
         try:
-            image_buf = torch.tensor(np.frombuffer(payload, dtype=np.uint8))
-            data = torchvision.io.decode_image(image_buf, mode=self._default_image_mode)
+            data = self.load(key_name, type='image')
         except:
-            data = torch.tensor(np.load(io.BytesIO(payload)))
+            data = self.load(key_name, type='numpy')
         return data
 
     def __del__(self,):
@@ -63,7 +62,9 @@ class LMDBEngine:
         if payload is None:
             raise KeyError('Key:{} Not Found!'.format(key_name))
         if type == 'numpy':
-            numpy_data = np.load(io.BytesIO(payload))
+            numpy_data = np.load(io.BytesIO(payload), allow_pickle=True)
+            if numpy_data.dtype == object:
+                numpy_data = numpy_data.item()
             numpy_data = data_to_torch(numpy_data)
             return numpy_data
         elif type == 'image':
@@ -80,7 +81,7 @@ class LMDBEngine:
                 else:
                     raise NotImplementedError
             else:
-                _mode = torchvision.io.ImageReadMode.RGB
+                _mode = self._default_image_mode
             image_data = torchvision.io.decode_image(image_buf, mode=_mode)
             return image_data
         else:

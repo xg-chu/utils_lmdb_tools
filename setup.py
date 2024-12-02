@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-VERSION = '1.2.0' 
+VERSION = '1.3.0' 
 DESCRIPTION = 'A LMDB wrapper for Python'
 LONG_DESCRIPTION = 'A package that allows you to interact with LMDB in a more pythonic way, based on pytorch and numpy.'
 
